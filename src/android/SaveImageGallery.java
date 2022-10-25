@@ -161,20 +161,14 @@ public class SaveImageGallery extends CordovaPlugin {
         File retVal = null;
 
         try {
+            String deviceVersion = Build.VERSION.RELEASE;
             Calendar c = Calendar.getInstance();
             String date = EMPTY_STR + c.get(Calendar.YEAR) + c.get(Calendar.MONTH) + c.get(Calendar.DAY_OF_MONTH)
                     + c.get(Calendar.HOUR_OF_DAY) + c.get(Calendar.MINUTE) + c.get(Calendar.SECOND);
 
             File folder;
 
-            if (Build.VERSION.SDK_INT >= 30) {
-                // @see https://developer.android.com/about/versions/11/privacy/storage
-                folder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD_MR1) {
-                folder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-            } else {
-                folder = Environment.getExternalStorageDirectory();
-            }
+            folder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
 
             if (!folder.exists()) {
                 folder.mkdirs();
