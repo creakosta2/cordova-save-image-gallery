@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.util.Calendar;
 import java.util.Arrays;
 import java.util.List;
+import java.io.OutputStream;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -23,6 +24,13 @@ import android.os.Build;
 import android.os.Environment;
 import android.util.Base64;
 import android.util.Log;
+
+import android.provider.MediaStore;
+import android.provider.MediaStore.Images;
+import android.content.Context;
+import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.ContentValues;
 
 /**
  * SaveImageGallery.java
@@ -167,38 +175,75 @@ public class SaveImageGallery extends CordovaPlugin {
                     + c.get(Calendar.HOUR_OF_DAY) + c.get(Calendar.MINUTE) + c.get(Calendar.SECOND);
 
             File folder;
-
-            folder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-
-            if (!folder.exists()) {
-                folder.mkdirs();
-            }
-
-            // building the filename
+            Uri url = null;
+            Uri imageDir;
             String fileName = prefix + date;
-            Bitmap.CompressFormat compressFormat = null;
-            // switch for String is not valid for java < 1.6, so we avoid it
-            if (format.equalsIgnoreCase(JPG_FORMAT)) {
+
+            // Target Android <= 10
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+
+              imageDir = MediaStore.Images.Media
+                .getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+
+              ContentValues values = new ContentValues();
+              values.put(Images.Media.TITLE, fileName);
+              // Add the date meta data to ensure the image is added at the front of the gallery
+              values.put(Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000);
+              values.put(Images.Media.DATE_TAKEN, System.currentTimeMillis());
+
+              url = this.cordova.getActivity().getApplicationContext().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+              OutputStream imageOut = this.cordova.getActivity().getApplicationContext().getContentResolver().openOutputStream(url);
+
+              try {
+                if (format.equalsIgnoreCase(JPG_FORMAT)) {
+                  fileName += ".jpeg";
+                  bmp.compress(Bitmap.CompressFormat.JPEG, 100, imageOut);
+                } else if (format.equalsIgnoreCase(PNG_FORMAT)) {
+                  fileName += ".png";
+                  bmp.compress(Bitmap.CompressFormat.PNG, 100, imageOut);
+                } else {
+                  // default case
+                  fileName += ".jpeg";
+                  bmp.compress(Bitmap.CompressFormat.JPEG, 100, imageOut);
+                }
+
+
+                File legacyImageFile = new File(fileName);
+                retVal = legacyImageFile;
+              } finally {
+                imageOut.close();
+              }
+            } else {
+              folder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+
+              if (!folder.exists()) {
+                folder.mkdirs();
+              }
+
+              // building the filename
+              Bitmap.CompressFormat compressFormat = null;
+              // switch for String is not valid for java < 1.6, so we avoid it
+              if (format.equalsIgnoreCase(JPG_FORMAT)) {
                 fileName += ".jpeg";
                 compressFormat = Bitmap.CompressFormat.JPEG;
-            } else if (format.equalsIgnoreCase(PNG_FORMAT)) {
+              } else if (format.equalsIgnoreCase(PNG_FORMAT)) {
                 fileName += ".png";
                 compressFormat = Bitmap.CompressFormat.PNG;
-            } else {
+              } else {
                 // default case
                 fileName += ".jpeg";
                 compressFormat = Bitmap.CompressFormat.JPEG;
+              }
+
+              // now we create the image in the folder
+              File imageFile = new File(folder, fileName);
+              FileOutputStream out = new FileOutputStream(imageFile);
+              // compress it
+              bmp.compress(compressFormat, quality, out);
+              out.flush();
+              out.close();
+              retVal = imageFile;
             }
-
-            // now we create the image in the folder
-            File imageFile = new File(folder, fileName);
-            FileOutputStream out = new FileOutputStream(imageFile);
-            // compress it
-            bmp.compress(compressFormat, quality, out);
-            out.flush();
-            out.close();
-
-            retVal = imageFile;
 
         } catch (Exception e) {
             Log.e("SaveImageToGallery", "An exception occured while saving image: " + e.toString());
