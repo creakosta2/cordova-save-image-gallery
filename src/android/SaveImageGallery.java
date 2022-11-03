@@ -167,6 +167,7 @@ public class SaveImageGallery extends CordovaPlugin {
      */
     private File savePhoto(Bitmap bmp, String prefix, String format, int quality) {
         File retVal = null;
+        ContentResolver contextResolver = this.cordova.getActivity().getApplicationContext().getContentResolver();
 
         try {
             String deviceVersion = Build.VERSION.RELEASE;
@@ -191,12 +192,12 @@ public class SaveImageGallery extends CordovaPlugin {
               values.put(Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000);
               values.put(Images.Media.DATE_TAKEN, System.currentTimeMillis());
 
-              url = this.cordova.getActivity().getApplicationContext().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-              OutputStream imageOut = this.cordova.getActivity().getApplicationContext().getContentResolver().openOutputStream(url);
+              url = contextResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+              OutputStream imageOut = contextResolver.openOutputStream(url);
 
               try {
                 if (format.equalsIgnoreCase(JPG_FORMAT)) {
-                  fileName += ".jpeg";
+                  fileName += ".jpg";
                   bmp.compress(Bitmap.CompressFormat.JPEG, 100, imageOut);
                 } else if (format.equalsIgnoreCase(PNG_FORMAT)) {
                   fileName += ".png";
@@ -224,7 +225,7 @@ public class SaveImageGallery extends CordovaPlugin {
               Bitmap.CompressFormat compressFormat = null;
               // switch for String is not valid for java < 1.6, so we avoid it
               if (format.equalsIgnoreCase(JPG_FORMAT)) {
-                fileName += ".jpeg";
+                fileName += ".jpg";
                 compressFormat = Bitmap.CompressFormat.JPEG;
               } else if (format.equalsIgnoreCase(PNG_FORMAT)) {
                 fileName += ".png";
