@@ -8,3 +8,5 @@
 # Editors
 *.sublime-project
 *.sublime-workspace
+/cordova-save-image-gallery.iml
+/.idea/

@@ -148,7 +148,9 @@ public class SaveImageGallery extends CordovaPlugin {
             }
 
             // Update image gallery
-            if (mediaScannerEnabled) {
+            // Stephen : https://jollywise.atlassian.net/browse/GAMEBOX-102
+            // only update image gallery if we have an image
+            if (mediaScannerEnabled && imageFile != null) {
                 scanPhoto(imageFile);
             }
 
