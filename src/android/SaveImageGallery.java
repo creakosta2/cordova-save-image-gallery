@@ -183,69 +183,76 @@ public class SaveImageGallery extends CordovaPlugin {
             String fileName = prefix + date;
 
             // Target Android <= 10
-            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+            // https://developer.android.com/reference/android/os/Build.VERSION_CODES#Q
+            // if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+            // using const value 29
+            if (Build.VERSION.SDK_INT <= 29) {
 
-              imageDir = MediaStore.Images.Media
-                .getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+                // https://developer.android.com/reference/android/provider/MediaStore#VOLUME_EXTERNAL_PRIMARY
+                // imageDir = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+                // using const value "external_primary"
+                imageDir = MediaStore.Images.Media.getContentUri("external_primary");
 
-              ContentValues values = new ContentValues();
-              values.put(Images.Media.TITLE, fileName);
-              // Add the date meta data to ensure the image is added at the front of the gallery
-              values.put(Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000);
-              values.put(Images.Media.DATE_TAKEN, System.currentTimeMillis());
+                ContentValues values = new ContentValues();
+                values.put(Images.Media.TITLE, fileName);
+                // Add the date meta data to ensure the image is added at the front of the gallery
+                values.put(Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000);
+                values.put(Images.Media.DATE_TAKEN, System.currentTimeMillis());
 
-              url = contextResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-              OutputStream imageOut = contextResolver.openOutputStream(url);
+                url = contextResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                OutputStream imageOut = contextResolver.openOutputStream(url);
 
-              try {
-                if (format.equalsIgnoreCase(JPG_FORMAT)) {
-                  fileName += ".jpg";
-                  bmp.compress(Bitmap.CompressFormat.JPEG, 100, imageOut);
-                } else if (format.equalsIgnoreCase(PNG_FORMAT)) {
-                  fileName += ".png";
-                  bmp.compress(Bitmap.CompressFormat.PNG, 100, imageOut);
-                } else {
-                  // default case
-                  fileName += ".jpeg";
-                  bmp.compress(Bitmap.CompressFormat.JPEG, 100, imageOut);
+                try {
+                    if (format.equalsIgnoreCase(JPG_FORMAT)) {
+                        fileName += ".jpg";
+                        bmp.compress(Bitmap.CompressFormat.JPEG, 100, imageOut);
+                    } else if (format.equalsIgnoreCase(PNG_FORMAT)) {
+                        fileName += ".png";
+                        bmp.compress(Bitmap.CompressFormat.PNG, 100, imageOut);
+                    } else {
+                        // default case
+                        fileName += ".jpeg";
+                        bmp.compress(Bitmap.CompressFormat.JPEG, 100, imageOut);
+                    }
+
+
+                    File legacyImageFile = new File(fileName);
+                    retVal = legacyImageFile;
+                } finally {
+                    imageOut.close();
                 }
 
-
-                File legacyImageFile = new File(fileName);
-                retVal = legacyImageFile;
-              } finally {
-                imageOut.close();
-              }
             } else {
-              folder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
 
-              if (!folder.exists()) {
-                folder.mkdirs();
-              }
+                folder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
 
-              // building the filename
-              Bitmap.CompressFormat compressFormat = null;
-              // switch for String is not valid for java < 1.6, so we avoid it
-              if (format.equalsIgnoreCase(JPG_FORMAT)) {
-                fileName += ".jpg";
-                compressFormat = Bitmap.CompressFormat.JPEG;
-              } else if (format.equalsIgnoreCase(PNG_FORMAT)) {
-                fileName += ".png";
-                compressFormat = Bitmap.CompressFormat.PNG;
-              } else {
-                // default case
-                fileName += ".jpeg";
-                compressFormat = Bitmap.CompressFormat.JPEG;
-              }
+                if (!folder.exists()) {
+                    folder.mkdirs();
+                }
 
-              // now we create the image in the folder
-              File imageFile = new File(folder, fileName);
-              FileOutputStream out = new FileOutputStream(imageFile);
-              // compress it
-              bmp.compress(compressFormat, quality, out);
-              out.flush();
-              out.close();
-              retVal = imageFile;
+                // building the filename
+                Bitmap.CompressFormat compressFormat = null;
+                // switch for String is not valid for java < 1.6, so we avoid it
+                if (format.equalsIgnoreCase(JPG_FORMAT)) {
+                    fileName += ".jpg";
+                    compressFormat = Bitmap.CompressFormat.JPEG;
+                } else if (format.equalsIgnoreCase(PNG_FORMAT)) {
+                    fileName += ".png";
+                    compressFormat = Bitmap.CompressFormat.PNG;
+                } else {
+                    // default case
+                    fileName += ".jpeg";
+                    compressFormat = Bitmap.CompressFormat.JPEG;
+                }
+
+                // now we create the image in the folder
+                File imageFile = new File(folder, fileName);
+                FileOutputStream out = new FileOutputStream(imageFile);
+                // compress it
+                bmp.compress(compressFormat, quality, out);
+                out.flush();
+                out.close();
+                retVal = imageFile;
             }
 
         } catch (Exception e) {
@@ -271,20 +278,20 @@ public class SaveImageGallery extends CordovaPlugin {
     /**
      * Callback from PermissionHelper.requestPermission method
      */
-	public void onRequestPermissionResult(int requestCode, String[] permissions, int[] grantResults) throws JSONException {
-		for (int r : grantResults) {
-			if (r == PackageManager.PERMISSION_DENIED) {
-				Log.d("SaveImageGallery", "Permission not granted by the user");
-				_callback.error("Permissions denied");
-				return;
-			}
-		}
+    public void onRequestPermissionResult(int requestCode, String[] permissions, int[] grantResults) throws JSONException {
+        for (int r : grantResults) {
+            if (r == PackageManager.PERMISSION_DENIED) {
+                Log.d("SaveImageGallery", "Permission not granted by the user");
+                _callback.error("Permissions denied");
+                return;
+            }
+        }
 
-		switch (requestCode) {
-		case WRITE_PERM_REQUEST_CODE:
-			Log.d("SaveImageGallery", "User granted the permission for WRITE_EXTERNAL_STORAGE");
-            saveBase64Image(this._args, this._callback);
-			break;
-		}
-	}
+        switch (requestCode) {
+            case WRITE_PERM_REQUEST_CODE:
+                Log.d("SaveImageGallery", "User granted the permission for WRITE_EXTERNAL_STORAGE");
+                saveBase64Image(this._args, this._callback);
+                break;
+        }
+    }
 }
