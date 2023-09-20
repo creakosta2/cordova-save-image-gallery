@@ -39,7 +39,7 @@
     <source-file src="src/android/SaveImageGallery.java" target-dir="src/com/agomezmoron/SaveImageGallery"/>
 
     <config-file parent="/*" target="AndroidManifest.xml">
-      <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+      <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
       <uses-permission android:name="android.permission.DELETE_CACHE_FILES"/>
       <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     </config-file>
